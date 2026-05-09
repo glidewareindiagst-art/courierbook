@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../theme/app_theme.dart';
 
 class ConsignmentInfoCardWidget extends StatelessWidget {
@@ -117,13 +118,48 @@ class _BarcodeScannerPage extends StatefulWidget {
 }
 
 class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
-  bool _scanned = false;
+  late MobileScannerController _scannerController;
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scannerController = MobileScannerController(
+      autoStart: true,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  void _handleDetect(BarcodeCapture capture) {
+    if (_isProcessing) return;
+    
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isNotEmpty) {
+      final String? scannedValue = barcodes.first.rawValue;
+      
+      if (scannedValue != null && scannedValue.isNotEmpty) {
+        setState(() => _isProcessing = true);
+        
+        // Return the scanned value and pop
+        widget.onScanned(scannedValue);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace with mobile_scanner MobileScanner widget for production
-    // import 'package:mobile_scanner/mobile_scanner.dart';
-    // MobileScanner(onDetect: (capture) { ... })
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -140,36 +176,89 @@ class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
           icon: const Icon(Icons.close_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flashlight_on_rounded, color: Colors.white),
+            tooltip: 'Toggle Torch',
+            onPressed: () {
+              _scannerController.toggleTorch();
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
-          // Scanner viewfinder placeholder
+          // Mobile Scanner Widget
+          MobileScanner(
+            controller: _scannerController,
+            onDetect: _handleDetect,
+            errorBuilder: (context, error, child) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 56,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Camera Permission Required',
+                      style: GoogleFonts.ibmPlexSans(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enable camera access to scan barcodes',
+                      style: GoogleFonts.ibmPlexSans(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Scanner viewfinder overlay
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 260,
-                  height: 180,
+                  width: 280,
+                  height: 200,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.primary, width: 2),
+                    border: Border.all(color: AppTheme.primary, width: 3),
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primary.withAlpha(51),
+                        blurRadius: 16,
+                        spreadRadius: 4,
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: Colors.white.withAlpha(179),
-                          size: 56,
+                          Icons.qr_code_rounded,
+                          color: Colors.white.withAlpha(204),
+                          size: 48,
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Point camera at barcode',
+                          'Align barcode within box',
                           style: GoogleFonts.ibmPlexSans(
-                            color: Colors.white.withAlpha(179),
+                            color: Colors.white.withAlpha(204),
                             fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -177,28 +266,27 @@ class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Manual entry fallback
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Demo: simulate a scan
-                      if (!_scanned) {
-                        _scanned = true;
-                        widget.onScanned('CB2024051908');
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.check_rounded),
-                    label: const Text('Use Demo Scan (CB2024051908)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                // Scanning indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Scanning...',
+                      style: GoogleFonts.ibmPlexSans(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

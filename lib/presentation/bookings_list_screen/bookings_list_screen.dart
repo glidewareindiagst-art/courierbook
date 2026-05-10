@@ -251,7 +251,6 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                     totalCharged: _totalCharged,
                     totalProfit: _totalProfit,
                     codPending: _codPending,
-                    height: 140,
                   ),
                 ),
               ),
@@ -285,8 +284,13 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
 
               // List
               if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: LoadingSkeletonWidget()),
+                SliverFillRemaining(
+                  child: Center(
+                    child: Container(
+                      height: 200,
+                      child: const LoadingSkeletonWidget(height: 200),
+                    ),
+                  ),
                 )
               else if (_filteredBookings.isEmpty)
                 SliverFillRemaining(

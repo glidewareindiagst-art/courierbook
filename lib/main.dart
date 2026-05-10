@@ -5,6 +5,7 @@ import '../widgets/custom_error_widget.dart';
 import './routes/app_routes.dart';
 import 'package:flutter/foundation.dart';
 import 'services/supabase_service.dart';
+import 'services/sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,9 @@ void main() async {
   } catch (e) {
     debugPrint('Failed to initialize Supabase: $e');
   }
+
+  // Initialize Sync Service
+  SyncService.instance.initialize();
 
   bool hasShownError = false;
 

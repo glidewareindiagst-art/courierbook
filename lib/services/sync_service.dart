@@ -47,8 +47,8 @@ class SyncService {
 
   Future<void> _syncCustomer(CustomerModel customer) async {
     try {
-      // TODO: Implement Supabase/Google Sheets sync logic here
-      // For now, just mark as synced
+      await SupabaseService.instance.upsertCustomer(customer);
+      
       final updatedCustomer = customer.copyWith(
         syncStatus: SyncStatus.synced,
         updatedAt: DateTime.now(),
@@ -61,8 +61,8 @@ class SyncService {
 
   Future<void> _syncBooking(BookingModel booking) async {
     try {
-      // TODO: Implement Supabase/Google Sheets sync logic here
-      // For now, just mark as synced
+      await SupabaseService.instance.upsertBooking(booking);
+      
       final updatedBooking = booking.copyWith(
         syncStatus: SyncStatus.synced,
         updatedAt: DateTime.now(),

@@ -25,5 +25,17 @@
         }
         // Get Supabase client
     SupabaseClient get client => Supabase.instance.client;
+
+    Future<void> upsertBooking(BookingModel booking) async {
+      await client.from('bookings').upsert(booking.toJson());
+    }
+
+    Future<void> upsertCustomer(CustomerModel customer) async {
+      await client.from('customers').upsert(customer.toJson());
+    }
+
+    Stream<List<Map<String, dynamic>>> subscribeToBookings() {
+      return client.from('bookings').stream(primaryKey: ['id']);
+    }
     }
     

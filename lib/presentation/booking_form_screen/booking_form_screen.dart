@@ -1,4 +1,3 @@
-
 import '../../core/app_export.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_navigation.dart';
@@ -15,7 +14,6 @@ class BookingFormScreen extends StatefulWidget {
 }
 
 class _BookingFormScreenState extends State<BookingFormScreen> {
-  // TODO: Replace with Riverpod/Bloc for production
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
   bool _isSynced = false;
@@ -62,42 +60,76 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   Future<void> _saveBooking() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSaving = true);
-    // TODO: Replace with actual save to local DB + Google Sheets API sync
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() {
-      _isSaving = false;
-      _isSynced = true;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Booking saved & synced',
-              style: GoogleFonts.ibmPlexSans(fontSize: 13),
-            ),
-          ],
+
+    try {
+      final booking = BookingModel(
+        consignmentNumber: _consignmentController.text,
+        customerName: _customerNameController.text,
+        mobileNumber: _mobileController.text,
+        weight: double.tryParse(_weightController.text) ?? 0.0,
+        chargedAmount: _chargedAmount,
+        costAmount: _costAmount,
+        paymentType: _paymentType == 'COD' ? PaymentType.cod : PaymentType.prepaid,
+        codAmount: double.tryParse(_codAmountController.text) ?? 0.0,
+        courierName: _courierNameController.text,
+        syncStatus: SyncStatus.offline,
+      );
+
+      // Save to local DB
+      await DatabaseService.instance.createBooking(booking);
+
+      // Also ensure customer exists or update customer info
+      final customers = await DatabaseService.instance.readAllCustomers();
+      final existingCustomer = customers.where((c) => c.mobileNumber == booking.mobileNumber).toList();
+      
+      if (existingCustomer.isEmpty) {
+        await DatabaseService.instance.createCustomer(CustomerModel(
+          name: booking.customerName,
+          mobileNumber: booking.mobileNumber,
+        ));
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _isSynced = false; // Initially offline
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Booking saved locally',
+                style: GoogleFonts.ibmPlexSans(fontSize: 13),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: AppTheme.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.bookingsListScreen,
-      (route) => false,
-    );
+      );
+
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      debugPrint('Error saving booking: $e');
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save booking: $e')),
+        );
+      }
+    }
   }
 
   void _onConsignmentScanned(String value) {
@@ -118,11 +150,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
         scrolledUnderElevation: 2,
         shadowColor: const Color(0x1A1565C0),
         leading: IconButton(
-          onPressed: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.bookingsListScreen,
-            (r) => false,
-          ),
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A2340)),
         ),
         title: Text(

@@ -6,214 +6,6 @@ import './widgets/booking_filter_chips_widget.dart';
 import './widgets/section_header_widget.dart';
 import './widgets/summary_banner_widget.dart';
 
-// ─── Data Model ───────────────────────────────────────────────
-enum PaymentType { cod, prepaid }
-
-enum SyncStatus { synced, pending, offline }
-
-class BookingModel {
-  final String id;
-  final String consignmentNumber;
-  final String customerName;
-  final String mobileNumber;
-  final double weight;
-  final double chargedAmount;
-  final double costAmount;
-  final double profit;
-  final PaymentType paymentType;
-  final double codAmount;
-  final String courierName;
-  final DateTime createdAt;
-  final SyncStatus syncStatus;
-
-  BookingModel({
-    required this.id,
-    required this.consignmentNumber,
-    required this.customerName,
-    required this.mobileNumber,
-    required this.weight,
-    required this.chargedAmount,
-    required this.costAmount,
-    required this.profit,
-    required this.paymentType,
-    required this.codAmount,
-    required this.courierName,
-    required this.createdAt,
-    required this.syncStatus,
-  });
-
-  static PaymentType _paymentFromString(String v) {
-    switch (v) {
-      case 'prepaid':
-        return PaymentType.prepaid;
-      default:
-        return PaymentType.cod;
-    }
-  }
-
-  static SyncStatus _syncFromString(String v) {
-    switch (v) {
-      case 'synced':
-        return SyncStatus.synced;
-      case 'offline':
-        return SyncStatus.offline;
-      default:
-        return SyncStatus.pending;
-    }
-  }
-
-  factory BookingModel.fromMap(Map<String, dynamic> map) {
-    final charged = (map['chargedAmount'] as num).toDouble();
-    final cost = (map['costAmount'] as num).toDouble();
-    return BookingModel(
-      id: map['id'] as String,
-      consignmentNumber: map['consignmentNumber'] as String,
-      customerName: map['customerName'] as String,
-      mobileNumber: map['mobileNumber'] as String,
-      weight: (map['weight'] as num).toDouble(),
-      chargedAmount: charged,
-      costAmount: cost,
-      profit: charged - cost,
-      paymentType: _paymentFromString(map['paymentType'] as String),
-      codAmount: (map['codAmount'] as num).toDouble(),
-      courierName: map['courierName'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      syncStatus: _syncFromString(map['syncStatus'] as String),
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'consignmentNumber': consignmentNumber,
-    'customerName': customerName,
-    'mobileNumber': mobileNumber,
-    'weight': weight,
-    'chargedAmount': chargedAmount,
-    'costAmount': costAmount,
-    'paymentType': paymentType == PaymentType.cod ? 'cod' : 'prepaid',
-    'codAmount': codAmount,
-    'courierName': courierName,
-    'createdAt': createdAt.toIso8601String(),
-    'syncStatus': syncStatus.name,
-  };
-}
-
-// ─── Mock Data ────────────────────────────────────────────────
-final List<Map<String, dynamic>> _mockBookingMaps = [
-  {
-    'id': 'b001',
-    'consignmentNumber': 'CB2024051901',
-    'customerName': 'Priya Subramaniam',
-    'mobileNumber': '9876543210',
-    'weight': 1.5,
-    'chargedAmount': 180.0,
-    'costAmount': 110.0,
-    'paymentType': 'cod',
-    'codAmount': 1200.0,
-    'courierName': 'DTDC',
-    'createdAt': '2026-05-09T09:15:00',
-    'syncStatus': 'synced',
-  },
-  {
-    'id': 'b002',
-    'consignmentNumber': 'CB2024051902',
-    'customerName': 'Arjun Mehta',
-    'mobileNumber': '9123456780',
-    'weight': 3.2,
-    'chargedAmount': 320.0,
-    'costAmount': 210.0,
-    'paymentType': 'prepaid',
-    'codAmount': 0.0,
-    'courierName': 'BlueDart',
-    'createdAt': '2026-05-09T10:22:00',
-    'syncStatus': 'synced',
-  },
-  {
-    'id': 'b003',
-    'consignmentNumber': 'CB2024051903',
-    'customerName': 'Fatima Noor',
-    'mobileNumber': '9988776655',
-    'weight': 0.8,
-    'chargedAmount': 95.0,
-    'costAmount': 65.0,
-    'paymentType': 'cod',
-    'codAmount': 450.0,
-    'courierName': 'Delhivery',
-    'createdAt': '2026-05-09T11:05:00',
-    'syncStatus': 'pending',
-  },
-  {
-    'id': 'b004',
-    'consignmentNumber': 'CB2024051904',
-    'customerName': 'Ravi Shankar Pillai',
-    'mobileNumber': '9012345678',
-    'weight': 5.0,
-    'chargedAmount': 520.0,
-    'costAmount': 390.0,
-    'paymentType': 'prepaid',
-    'codAmount': 0.0,
-    'courierName': 'Ekart',
-    'createdAt': '2026-05-09T12:30:00',
-    'syncStatus': 'offline',
-  },
-  {
-    'id': 'b005',
-    'consignmentNumber': 'CB2024051905',
-    'customerName': 'Sunita Devi',
-    'mobileNumber': '8765432109',
-    'weight': 2.1,
-    'chargedAmount': 240.0,
-    'costAmount': 170.0,
-    'paymentType': 'cod',
-    'codAmount': 850.0,
-    'courierName': 'DTDC',
-    'createdAt': '2026-05-09T13:45:00',
-    'syncStatus': 'synced',
-  },
-  {
-    'id': 'b006',
-    'consignmentNumber': 'CB2024051906',
-    'customerName': 'Mohammed Irfan',
-    'mobileNumber': '7654321098',
-    'weight': 1.0,
-    'chargedAmount': 130.0,
-    'costAmount': 95.0,
-    'paymentType': 'prepaid',
-    'codAmount': 0.0,
-    'courierName': 'Xpressbees',
-    'createdAt': '2026-05-08T09:00:00',
-    'syncStatus': 'synced',
-  },
-  {
-    'id': 'b007',
-    'consignmentNumber': 'CB2024051907',
-    'customerName': 'Kavitha Ramachandran',
-    'mobileNumber': '9345678901',
-    'weight': 4.5,
-    'chargedAmount': 480.0,
-    'costAmount': 360.0,
-    'paymentType': 'cod',
-    'codAmount': 2200.0,
-    'courierName': 'BlueDart',
-    'createdAt': '2026-05-08T11:20:00',
-    'syncStatus': 'synced',
-  },
-  {
-    'id': 'b008',
-    'consignmentNumber': 'CB2024051908',
-    'customerName': 'Deepak Verma',
-    'mobileNumber': '8901234567',
-    'weight': 0.5,
-    'chargedAmount': 75.0,
-    'costAmount': 55.0,
-    'paymentType': 'prepaid',
-    'codAmount': 0.0,
-    'courierName': 'Delhivery',
-    'createdAt': '2026-05-08T14:10:00',
-    'syncStatus': 'pending',
-  },
-];
-
 // ─── Screen ───────────────────────────────────────────────────
 class BookingsListScreen extends StatefulWidget {
   const BookingsListScreen({super.key});
@@ -223,7 +15,6 @@ class BookingsListScreen extends StatefulWidget {
 }
 
 class _BookingsListScreenState extends State<BookingsListScreen> {
-  // TODO: Replace with Riverpod/Bloc for production
   List<BookingModel> _allBookings = [];
   List<BookingModel> _filteredBookings = [];
   String _activeFilter = 'All';
@@ -235,12 +26,24 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
   @override
   void initState() {
     super.initState();
-    _allBookings = _mockBookingMaps.map(BookingModel.fromMap).toList();
-    // Simulate initial load
-    Future.delayed(const Duration(milliseconds: 700), () {
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings() async {
+    setState(() => _isLoading = true);
+    try {
+      final bookings = await DatabaseService.instance.readAllBookings();
+      if (mounted) {
+        setState(() {
+          _allBookings = bookings;
+          _isLoading = false;
+          _applyFilters();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading bookings: $e');
       if (mounted) setState(() => _isLoading = false);
-    });
-    _applyFilters();
+    }
   }
 
   @override
@@ -306,6 +109,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     setState(() => _isSyncing = true);
     // TODO: Replace with actual Google Sheets API sync
     await Future.delayed(const Duration(milliseconds: 1500));
+    await _loadBookings();
     if (!mounted) return;
     setState(() => _isSyncing = false);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -342,163 +146,136 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
           d.day == now.day - 1) {
         label = 'Yesterday';
       } else {
-        label =
-            '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+        label = '${d.day}/${d.month}/${d.year}';
       }
-      groups.putIfAbsent(label, () => []).add(b);
+
+      if (!groups.containsKey(label)) {
+        groups[label] = [];
+      }
+      groups[label]!.add(b);
     }
     return groups;
   }
 
-  // Today's stats
-  List<BookingModel> get _todayBookings {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    return _allBookings.where((b) => b.createdAt.isAfter(start)).toList();
-  }
-
-  double get _todayTotalCharged =>
-      _todayBookings.fold(0, (sum, b) => sum + b.chargedAmount);
-  double get _todayTotalProfit =>
-      _todayBookings.fold(0, (sum, b) => sum + b.profit);
-  double get _todayCodPending => _todayBookings
-      .where((b) => b.paymentType == PaymentType.cod)
-      .fold(0, (sum, b) => sum + b.codAmount);
-
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width >= 600;
     final groups = _groupedBookings;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.surfaceLight,
-        elevation: 0,
-        scrolledUnderElevation: 2,
-        shadowColor: const Color(0x1A1565C0),
-        automaticallyImplyLeading: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'CourierBook',
-              style: GoogleFonts.ibmPlexSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1A2340),
-              ),
-            ),
-            Text(
-              'All Bookings',
-              style: GoogleFonts.ibmPlexSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF546E7A),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Sync button
-          IconButton(
-            onPressed: _isSyncing ? null : _onRefresh,
-            icon: _isSyncing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppTheme.primary,
-                    ),
-                  )
-                : const Icon(
-                    Icons.sync_rounded,
-                    color: AppTheme.primary,
-                    size: 22,
-                  ),
-            tooltip: 'Sync with Google Sheets',
-          ),
-          IconButton(
-            onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.signUpLoginScreen),
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Color(0xFF90A4AE),
-              size: 22,
-            ),
-            tooltip: 'Sign Out',
-          ),
-        ],
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _onRefresh,
           color: AppTheme.primary,
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
+              // Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 24 : 16,
-                    vertical: 12,
-                  ),
-                  child: Column(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
                     children: [
-                      // Summary Banner
-                      SummaryBannerWidget(
-                        bookingCount: _todayBookings.length,
-                        totalCharged: _todayTotalCharged,
-                        totalProfit: _todayTotalProfit,
-                        codPending: _todayCodPending,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Courier Book',
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1A2340),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            'Manage your daily bookings',
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 13,
+                              color: const Color(0xFF90A4AE),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 14),
-
-                      // Search Bar
-                      _SearchBarWidget(
-                        controller: _searchController,
-                        onChanged: _onSearchChanged,
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Filter Chips
-                      BookingFilterChipsWidget(
-                        activeFilter: _activeFilter,
-                        onFilterChanged: _onFilterChanged,
-                      ),
-                      const SizedBox(height: 4),
+                      const Spacer(),
+                      if (_isSyncing)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.primary,
+                          ),
+                        )
+                      else
+                        IconButton(
+                          onPressed: _onRefresh,
+                          icon: const Icon(
+                            Icons.sync_rounded,
+                            color: AppTheme.primary,
+                            size: 22,
+                          ),
+                          tooltip: 'Sync with Sheets',
+                        ),
                     ],
                   ),
                 ),
               ),
 
-              // Content
-              if (_isLoading)
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, __) => const BookingCardSkeletonWidget(),
-                    childCount: 5,
+              // Summary Banner
+              SliverToBoxAdapter(
+                child: SummaryBannerWidget(bookings: _allBookings),
+              ),
+
+              // Search & Filters
+              SliverAppBar(
+                pinned: true,
+                floating: false,
+                elevation: 0,
+                backgroundColor: AppTheme.backgroundLight,
+                automaticallyImplyLeading: false,
+                toolbarHeight: 110,
+                flexibleSpace: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      _SearchBarWidget(
+                        controller: _searchController,
+                        onChanged: _onSearchChanged,
+                      ),
+                      const SizedBox(height: 12),
+                      BookingFilterChipsWidget(
+                        activeFilter: _activeFilter,
+                        onFilterChanged: _onFilterChanged,
+                      ),
+                    ],
                   ),
+                ),
+              ),
+
+              // List
+              if (_isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: LoadingSkeletonWidget()),
                 )
               else if (_filteredBookings.isEmpty)
                 SliverFillRemaining(
+                  hasScrollBody: false,
                   child: EmptyStateWidget(
-                    iconName: 'local_shipping',
-                    title: 'No bookings found',
-                    subtitle: _searchQuery.isNotEmpty
-                        ? 'No results for "$_searchQuery". Try a different search.'
-                        : 'No bookings match the selected filter. Create a new booking to get started.',
-                    actionLabel: 'New Booking',
-                    onAction: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.bookingFormScreen,
-                    ),
+                    title: _searchQuery.isEmpty
+                        ? 'No bookings yet'
+                        : 'No results found',
+                    message: _searchQuery.isEmpty
+                        ? 'Tap the + button to create your first booking.'
+                        : 'Try adjusting your search or filters.',
                   ),
                 )
               else
                 SliverPadding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 24 : 16,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
                     vertical: 4,
                   ),
                   sliver: SliverList(
@@ -545,8 +322,12 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () =>
-            Navigator.pushNamed(context, AppRoutes.bookingFormScreen),
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, AppRoutes.bookingFormScreen);
+          if (result == true) {
+            _loadBookings();
+          }
+        },
         icon: const Icon(Icons.add_rounded, size: 20),
         label: Text(
           'New Booking',

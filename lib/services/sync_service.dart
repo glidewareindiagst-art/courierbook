@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import '../core/app_export.dart';
+import 'supabase_service.dart';
+import 'google_sheets_service.dart';
 
 class SyncService {
   static final SyncService instance = SyncService._();
@@ -61,7 +63,15 @@ class SyncService {
 
   Future<void> _syncBooking(BookingModel booking) async {
     try {
+      // Sync to Supabase
       await SupabaseService.instance.upsertBooking(booking);
+      
+      // Sync to Google Sheets
+      try {
+        await GoogleSheetsService.instance.syncBooking(booking);
+      } catch (e) {
+        debugPrint('Google Sheets sync failed, but Supabase succeeded: $e');
+      }
       
       final updatedBooking = booking.copyWith(
         syncStatus: SyncStatus.synced,

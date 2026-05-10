@@ -5,17 +5,17 @@ import '../theme/app_theme.dart';
 import './custom_icon_widget.dart';
 
 class EmptyStateWidget extends StatelessWidget {
-  final String iconName;
+  final String? iconName;
   final String title;
-  final String subtitle;
+  final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
 
   const EmptyStateWidget({
     super.key,
-    required this.iconName,
+    this.iconName,
     required this.title,
-    required this.subtitle,
+    this.message,
     this.actionLabel,
     this.onAction,
   });
@@ -28,19 +28,20 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryContainer,
-                shape: BoxShape.circle,
+            if (iconName != null)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: CustomIconWidget(
+                  iconName: iconName!,
+                  color: AppTheme.primary,
+                  size: 40,
+                ),
               ),
-              child: CustomIconWidget(
-                iconName: iconName,
-                color: AppTheme.primary,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 20),
+            if (iconName != null) const SizedBox(height: 20),
             Text(
               title,
               style: GoogleFonts.ibmPlexSans(
@@ -50,25 +51,23 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: GoogleFonts.ibmPlexSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF546E7A),
+            if (message != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                message!,
+                style: GoogleFonts.ibmPlexSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF546E7A),
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
+            ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onAction,
-                icon: CustomIconWidget(
-                  iconName: 'add',
-                  color: Colors.white,
-                  size: 18,
-                ),
+                icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(actionLabel!),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.primary,

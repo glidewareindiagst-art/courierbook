@@ -1,0 +1,57 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'android/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+      
+      - name: Get Flutter dependencies
+        run: flutter pub get
+      
+      - name: Run Flutter Analyze
+        run: flutter analyze --no-fatal-infos
+      
+      - name: Build Release APK
+        run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
+      
+      - name: Build App Bundle (AAB)
+        run: flutter build appbundle --release --obfuscate --split-debug-info=build/app/outputs/symbols
+      
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+      
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30

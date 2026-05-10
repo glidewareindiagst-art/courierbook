@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import '../core/app_export.dart';
 import '../data/models/booking_model.dart';
+import '../data/models/customer_model.dart';
 import 'supabase_service.dart';
 import 'google_sheets_service.dart';
 

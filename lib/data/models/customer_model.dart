@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'booking_model.dart';
 
 class CustomerModel {
   final String id;
@@ -93,4 +94,4 @@ class CustomerModel {
   }
 }
 
-enum SyncStatus { synced, pending, offline }
+// SyncStatus is imported from booking_model.dart

@@ -132,6 +132,25 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     );
   }
 
+  // Calculate stats for summary banner
+  int get _bookingCount {
+    return _allBookings.length;
+  }
+
+  double get _totalCharged {
+    return _allBookings.fold(0.0, (sum, b) => sum + b.chargedAmount);
+  }
+
+  double get _totalProfit {
+    return _allBookings.fold(0.0, (sum, b) => sum + b.profit);
+  }
+
+  double get _codPending {
+    return _allBookings
+        .where((b) => b.paymentType == PaymentType.cod)
+        .fold(0.0, (sum, b) => sum + b.codAmount);
+  }
+
   // Group bookings by date
   Map<String, List<BookingModel>> get _groupedBookings {
     final Map<String, List<BookingModel>> groups = {};
@@ -225,7 +244,16 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
 
               // Summary Banner
               SliverToBoxAdapter(
-                child: SummaryBannerWidget(bookings: _allBookings),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SummaryBannerWidget(
+                    bookingCount: _bookingCount,
+                    totalCharged: _totalCharged,
+                    totalProfit: _totalProfit,
+                    codPending: _codPending,
+                    height: 140,
+                  ),
+                ),
               ),
 
               // Search & Filters

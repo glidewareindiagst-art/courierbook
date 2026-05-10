@@ -18,6 +18,11 @@ dependencies:
   shared_preferences: ^2.2.2 # Required for local data storage
   web: ^1.1.1
   
+  # Database and persistence - CRITICAL for offline support
+  sqflite: ^2.3.0            # SQLite database for local persistence
+  uuid: ^4.0.0               # UUID generation for unique IDs
+  path: ^1.8.3               # Path utilities for database file location
+  
   # Feature dependencies - safe to modify
   cached_network_image: ^3.3.1
   connectivity_plus: ^6.1.4

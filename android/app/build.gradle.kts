@@ -1,13 +1,14 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("com.google.gms.google-services")           // Firebase
+    // Flutter Gradle Plugin must be applied after Android and Kotlin plugins
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.courierbook"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -21,21 +22,28 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.courierbook"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 23          // Firebase Phone Auth requires >= 21; 23 gives comfortable headroom
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // Uses debug signing key until you add a release keystore.
+            // Replace with your own signingConfig for production.
             signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 }
@@ -49,4 +57,9 @@ dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.concurrent:concurrent-futures:1.3.0")
+
+    // Firebase BOM — manages all Firebase library versions
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-analytics")
 }

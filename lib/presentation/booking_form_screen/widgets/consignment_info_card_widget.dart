@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../theme/app_theme.dart';
 
 class ConsignmentInfoCardWidget extends StatelessWidget {
@@ -118,39 +117,13 @@ class _BarcodeScannerPage extends StatefulWidget {
 }
 
 class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
-  late MobileScannerController controller;
   bool _scanned = false;
 
   @override
-  void initState() {
-    super.initState();
-    controller = MobileScannerController();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  void _handleBarcode(BarcodeCapture capture) {
-    if (_scanned) return;
-    
-    final List<Barcode> barcodes = capture.barcodes;
-    for (final barcode in barcodes) {
-      if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
-        _scanned = true;
-        widget.onScanned(barcode.rawValue!);
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) Navigator.pop(context);
-        });
-        break;
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // TODO: Replace with mobile_scanner MobileScanner widget for production
+    // import 'package:mobile_scanner/mobile_scanner.dart';
+    // MobileScanner(onDetect: (capture) { ... })
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -170,64 +143,64 @@ class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: _handleBarcode,
-          ),
-          // Scanner overlay
+          // Scanner viewfinder placeholder
           Center(
-            child: Container(
-              width: 260,
-              height: 180,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.primary, width: 2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: Colors.white.withAlpha(179),
-                      size: 56,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 260,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.primary, width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: Colors.white.withAlpha(179),
+                          size: 56,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Point camera at barcode',
+                          style: GoogleFonts.ibmPlexSans(
+                            color: Colors.white.withAlpha(179),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Point camera at barcode',
-                      style: GoogleFonts.ibmPlexSans(
-                        color: Colors.white.withAlpha(179),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Manual entry fallback
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 32),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  if (!_scanned) {
-                    _scanned = true;
-                    widget.onScanned('CB2024051908');
-                    Navigator.pop(context);
-                  }
-                },
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('Use Demo Scan'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-              ),
+                const SizedBox(height: 32),
+                // Manual entry fallback
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // Demo: simulate a scan
+                      if (!_scanned) {
+                        _scanned = true;
+                        widget.onScanned('CB2024051908');
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text('Use Demo Scan (CB2024051908)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

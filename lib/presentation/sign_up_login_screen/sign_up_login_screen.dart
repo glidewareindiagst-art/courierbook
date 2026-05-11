@@ -1,9 +1,7 @@
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/app_export.dart';
 import '../../routes/app_routes.dart';
-import './widgets/credentials_info_widget.dart';
-import './widgets/login_form_widget.dart';
-import './widgets/role_toggle_widget.dart';
+import '../../services/auth_service.dart';
 
 class SignUpLoginScreen extends StatefulWidget {
   const SignUpLoginScreen({super.key});
@@ -14,9 +12,12 @@ class SignUpLoginScreen extends StatefulWidget {
 
 class _SignUpLoginScreenState extends State<SignUpLoginScreen>
     with SingleTickerProviderStateMixin {
-  // TODO: Replace with Riverpod/Bloc for production
-  int _selectedRole = 0; // 0 = Admin, 1 = Staff
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
   bool _isLoading = false;
+  bool _otpSent = false;
+  String _verificationId = '';
+  
   late AnimationController _logoController;
   late Animation<double> _logoScale;
   late Animation<double> _logoOpacity;
@@ -41,57 +42,102 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
   @override
   void dispose() {
     _logoController.dispose();
+    _phoneController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
-  void _onRoleChanged(int role) {
-    setState(() => _selectedRole = role);
-  }
-
-  void _onLogin(String email, String password) async {
-    setState(() => _isLoading = true);
-    // TODO: Replace with real auth API call (Firebase/backend)
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Mock credential validation
-    final adminEmail = 'admin@courierbook.in';
-    final staffEmail = 'staff@courierbook.in';
-    final validPassword = 'courier@2024';
-
-    bool valid = false;
-    if (_selectedRole == 0 &&
-        email == adminEmail &&
-        password == validPassword) {
-      valid = true;
-    } else if (_selectedRole == 1 &&
-        email == staffEmail &&
-        password == validPassword) {
-      valid = true;
+  void _sendOTP() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty || phone.length < 10) {
+      _showError('Please enter a valid phone number');
+      return;
     }
 
-    if (valid) {
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService.instance.verifyPhoneNumber(
+        phoneNumber: phone.startsWith('+') ? phone : '+91$phone',
+        codeSent: (verificationId, resendToken) {
+          setState(() {
+            _isLoading = false;
+            _otpSent = true;
+            _verificationId = verificationId;
+          });
+          _showSuccess('OTP sent successfully');
+        },
+        verificationFailed: (e) {
+          setState(() => _isLoading = false);
+          _showError(e.message ?? 'Verification failed');
+        },
+        verificationCompleted: (credential) async {
+          await _signIn(credential);
+        },
+        codeAutoRetrievalTimeout: (verificationId) {
+          _verificationId = verificationId;
+        },
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Failed to send OTP: $e');
+    }
+  }
+
+  void _verifyOTP() async {
+    final otp = _otpController.text.trim();
+    if (otp.isEmpty || otp.length != 6) {
+      _showError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId,
+        smsCode: otp,
+      );
+      await _signIn(credential);
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Invalid OTP');
+    }
+  }
+
+  Future<void> _signIn(PhoneAuthCredential credential) async {
+    try {
+      await AuthService.instance.signInWithCredential(credential);
+      if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.bookingsListScreen,
         (route) => false,
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Invalid credentials — use the demo accounts below to sign in',
-            style: GoogleFonts.ibmPlexSans(fontSize: 13),
-          ),
-          backgroundColor: AppTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Sign in failed: $e');
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -167,27 +213,124 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 48),
 
-                  // Role Toggle
-                  RoleToggleWidget(
-                    selectedRole: _selectedRole,
-                    onRoleChanged: _onRoleChanged,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Login Form
-                  LoginFormWidget(
-                    isLoading: _isLoading,
-                    selectedRole: _selectedRole,
-                    onLogin: _onLogin,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Demo Credentials Info
-                  CredentialsInfoWidget(selectedRole: _selectedRole),
+                  if (!_otpSent) ...[
+                    Text(
+                      'Login / Signup',
+                      style: GoogleFonts.ibmPlexSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A2340),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter your mobile number to continue',
+                      style: GoogleFonts.ibmPlexSans(
+                        fontSize: 14,
+                        color: const Color(0xFF546E7A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: 'Mobile Number',
+                        hintText: '9876543210',
+                        prefixIcon: const Icon(Icons.phone_android_rounded),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _sendOTP,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Send OTP'),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Verify OTP',
+                      style: GoogleFonts.ibmPlexSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A2340),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter the 6-digit code sent to ${_phoneController.text}',
+                      style: GoogleFonts.ibmPlexSans(
+                        fontSize: 14,
+                        color: const Color(0xFF546E7A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(letterSpacing: 8, fontSize: 20),
+                      decoration: InputDecoration(
+                        labelText: 'OTP',
+                        counterText: '',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _verifyOTP,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Verify & Login'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => setState(() => _otpSent = false),
+                      child: const Text('Change Phone Number'),
+                    ),
+                  ],
                 ],
               ),
             ),

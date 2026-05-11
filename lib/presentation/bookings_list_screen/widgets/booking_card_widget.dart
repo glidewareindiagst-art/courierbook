@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/status_badge_widget.dart';
-import '../../../data/models/booking_model.dart';
+import '../bookings_list_screen.dart';
 
 class BookingCardWidget extends StatelessWidget {
   final BookingModel booking;
@@ -13,8 +13,8 @@ class BookingCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCod = booking.paymentType == PaymentType.cod;
     final isProfit = booking.profit >= 0;
-    final syncColor = _getSyncStatusColor(booking.syncStatus);
-    final syncIcon = _getSyncStatusIcon(booking.syncStatus);
+    final syncColor = _syncColor(booking.syncStatus);
+    final syncIcon = _syncIcon(booking.syncStatus);
 
     return Material(
       color: Colors.transparent,
@@ -265,7 +265,7 @@ class BookingCardWidget extends StatelessWidget {
     );
   }
 
-  Color _getSyncStatusColor(SyncStatus status) {
+  Color _syncColor(SyncStatus status) {
     switch (status) {
       case SyncStatus.synced:
         return AppTheme.success;
@@ -273,20 +273,16 @@ class BookingCardWidget extends StatelessWidget {
         return const Color(0xFFF57F17);
       case SyncStatus.offline:
         return const Color(0xFF90A4AE);
-      default:
-        return const Color(0xFF90A4AE);
     }
   }
 
-  IconData _getSyncStatusIcon(SyncStatus status) {
+  IconData _syncIcon(SyncStatus status) {
     switch (status) {
       case SyncStatus.synced:
         return Icons.cloud_done_rounded;
       case SyncStatus.pending:
         return Icons.sync_rounded;
       case SyncStatus.offline:
-        return Icons.cloud_off_rounded;
-      default:
         return Icons.cloud_off_rounded;
     }
   }

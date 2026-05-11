@@ -1,6 +1,7 @@
 import '../../core/app_export.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_navigation.dart';
+import '../../services/auth_service.dart';
 import './widgets/booking_card_widget.dart';
 import './widgets/booking_filter_chips_widget.dart';
 import './widgets/section_header_widget.dart';
@@ -132,25 +133,6 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     );
   }
 
-  // Calculate stats for summary banner
-  int get _bookingCount {
-    return _allBookings.length;
-  }
-
-  double get _totalCharged {
-    return _allBookings.fold(0.0, (sum, b) => sum + b.chargedAmount);
-  }
-
-  double get _totalProfit {
-    return _allBookings.fold(0.0, (sum, b) => sum + b.profit);
-  }
-
-  double get _codPending {
-    return _allBookings
-        .where((b) => b.paymentType == PaymentType.cod)
-        .fold(0.0, (sum, b) => sum + b.codAmount);
-  }
-
   // Group bookings by date
   Map<String, List<BookingModel>> get _groupedBookings {
     final Map<String, List<BookingModel>> groups = {};
@@ -237,6 +219,23 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                           ),
                           tooltip: 'Sync with Sheets',
                         ),
+                      IconButton(
+                        onPressed: () async {
+                          await AuthService.instance.signOut();
+                          if (!mounted) return;
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.signUpLoginScreen,
+                            (route) => false,
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          color: AppTheme.errorColor,
+                          size: 22,
+                        ),
+                        tooltip: 'Logout',
+                      ),
                     ],
                   ),
                 ),
@@ -244,15 +243,7 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
 
               // Summary Banner
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: SummaryBannerWidget(
-                    bookingCount: _bookingCount,
-                    totalCharged: _totalCharged,
-                    totalProfit: _totalProfit,
-                    codPending: _codPending,
-                  ),
-                ),
+                child: SummaryBannerWidget(bookings: _allBookings),
               ),
 
               // Search & Filters
@@ -284,13 +275,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
 
               // List
               if (_isLoading)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Container(
-                      height: 200,
-                      child: const LoadingSkeletonWidget(height: 200),
-                    ),
-                  ),
+                const SliverFillRemaining(
+                  child: Center(child: LoadingSkeletonWidget()),
                 )
               else if (_filteredBookings.isEmpty)
                 SliverFillRemaining(

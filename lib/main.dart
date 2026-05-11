@@ -6,9 +6,18 @@ import './routes/app_routes.dart';
 import 'package:flutter/foundation.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Failed to initialize Firebase: $e');
+  }
 
   // Initialize Supabase
   try {
@@ -69,7 +78,7 @@ class MyApp extends StatelessWidget {
           // 🚨 END CRITICAL SECTION
           debugShowCheckedModeBanner: false,
           routes: AppRoutes.routes,
-          initialRoute: AppRoutes.initial,
+          initialRoute: AuthService.instance.isLoggedIn ? AppRoutes.bookingsListScreen : AppRoutes.initial,
         );
       },
     );

@@ -1,7 +1,7 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service to handle persistent login/logout and session management
+/// Local session metadata paired with Firebase Phone Auth.
 class PersistentAuthService {
   static final PersistentAuthService instance = PersistentAuthService._();
   PersistentAuthService._();
@@ -11,96 +11,65 @@ class PersistentAuthService {
   static const String _lastLoginTimeKey = 'last_login_time';
   static const String _isLoggedInKey = 'is_logged_in';
 
-  late SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
-  /// Initialize SharedPreferences
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  /// Save login session after successful authentication
   Future<void> saveLoginSession({
     required String phoneNumber,
     required String userId,
   }) async {
-    try {
-      await _prefs.setString(_userPhoneKey, phoneNumber);
-      await _prefs.setString(_userIdKey, userId);
-      await _prefs.setString(
-        _lastLoginTimeKey,
-        DateTime.now().toIso8601String(),
-      );
-      await _prefs.setBool(_isLoggedInKey, true);
-    } catch (e) {
-      throw Exception('Failed to save login session: $e');
+    final p = _prefs;
+    if (p == null) {
+      throw StateError('PersistentAuthService.initialize() was not called');
     }
+    await p.setString(_userPhoneKey, phoneNumber);
+    await p.setString(_userIdKey, userId);
+    await p.setString(
+      _lastLoginTimeKey,
+      DateTime.now().toIso8601String(),
+    );
+    await p.setBool(_isLoggedInKey, true);
   }
 
-  /// Retrieve saved user phone number
-  String? getUserPhone() {
-    return _prefs.getString(_userPhoneKey);
-  }
+  String? getUserPhone() => _prefs?.getString(_userPhoneKey);
 
-  /// Retrieve saved user ID
-  String? getUserId() {
-    return _prefs.getString(_userIdKey);
-  }
+  String? getUserId() => _prefs?.getString(_userIdKey);
 
-  /// Get last login time
   DateTime? getLastLoginTime() {
-    final timeStr = _prefs.getString(_lastLoginTimeKey);
-    if (timeStr != null) {
-      try {
-        return DateTime.parse(timeStr);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  /// Check if user has an existing session
-  bool hasActiveSession() {
-    return _prefs.getBool(_isLoggedInKey) ?? false;
-  }
-
-  /// Clear all session data (logout)
-  Future<void> clearSession() async {
+    final timeStr = _prefs?.getString(_lastLoginTimeKey);
+    if (timeStr == null) return null;
     try {
-      await _prefs.remove(_userPhoneKey);
-      await _prefs.remove(_userIdKey);
-      await _prefs.remove(_lastLoginTimeKey);
-      await _prefs.setBool(_isLoggedInKey, false);
-    } catch (e) {
-      throw Exception('Failed to clear session: $e');
+      return DateTime.parse(timeStr);
+    } catch (_) {
+      return null;
     }
   }
 
-  /// Check if session is still valid (optional: add expiration logic)
+  bool hasActiveSession() => _prefs?.getBool(_isLoggedInKey) ?? false;
+
+  Future<void> clearSession() async {
+    final p = _prefs;
+    if (p == null) return;
+    await p.remove(_userPhoneKey);
+    await p.remove(_userIdKey);
+    await p.remove(_lastLoginTimeKey);
+    await p.setBool(_isLoggedInKey, false);
+  }
+
   bool isSessionValid() {
-    if (!hasActiveSession()) {
-      return false;
-    }
-
+    if (!hasActiveSession()) return false;
     final lastLogin = getLastLoginTime();
-    if (lastLogin == null) {
-      return false;
-    }
-
-    // Session valid for 30 days
-    final expirationDuration = Duration(days: 30);
-    final isExpired = DateTime.now().difference(lastLogin) > expirationDuration;
-
-    return !isExpired;
+    if (lastLogin == null) return false;
+    const expirationDuration = Duration(days: 30);
+    return DateTime.now().difference(lastLogin) <= expirationDuration;
   }
 
-  /// Validate Firebase user matches saved session
   bool validateCurrentUser(User? currentUser) {
-    if (currentUser == null) {
-      return false;
-    }
-
+    if (currentUser == null) return false;
     final savedUserId = getUserId();
-    return savedUserId == currentUser.uid;
+    return savedUserId != null && savedUserId == currentUser.uid;
   }
 }

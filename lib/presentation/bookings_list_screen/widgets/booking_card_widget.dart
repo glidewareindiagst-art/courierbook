@@ -1,8 +1,11 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../../data/models/booking_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/status_badge_widget.dart';
-import '../bookings_list_screen.dart';
 
 class BookingCardWidget extends StatelessWidget {
   final BookingModel booking;

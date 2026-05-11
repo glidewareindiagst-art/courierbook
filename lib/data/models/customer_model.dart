@@ -93,5 +93,3 @@ class CustomerModel {
     );
   }
 }
-
-// SyncStatus is imported from booking_model.dart

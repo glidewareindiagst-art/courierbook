@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import '../core/app_export.dart';
+import '../data/models/booking_model.dart';
+import '../data/models/customer_model.dart';
+import 'database_service.dart';
 import 'supabase_service.dart';
 import 'google_sheets_service.dart';
 
@@ -26,6 +28,10 @@ class SyncService {
 
   Future<void> syncPendingData() async {
     if (_isSyncing) return;
+    if (!SupabaseService.isReady) {
+      debugPrint('Sync skipped: Supabase is not initialized');
+      return;
+    }
     _isSyncing = true;
 
     try {

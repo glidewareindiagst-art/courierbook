@@ -1,14 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../core/app_export.dart';
-import '../widgets/custom_error_widget.dart';
-import './routes/app_routes.dart';
-import 'package:flutter/foundation.dart';
-import 'services/supabase_service.dart';
-import 'services/sync_service.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'core/app_export.dart';
+import 'routes/app_routes.dart';
 import 'services/auth_service.dart';
 import 'services/persistent_auth_service.dart';
+import 'services/supabase_service.dart';
+import 'services/sync_service.dart';
+import 'widgets/custom_error_widget.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,12 +27,13 @@ void main() async {
     debugPrint('Failed to initialize PersistentAuthService: $e');
   }
 
-  // Initialize Supabase
   try {
     await SupabaseService.initialize();
   } catch (e) {
     debugPrint('Failed to initialize Supabase: $e');
   }
+
+  await _syncPersistentAuthWithFirebase();
 
   // Initialize Sync Service
   SyncService.instance.initialize();
@@ -60,6 +61,23 @@ void main() async {
   ]).then((value) {
     runApp(const MyApp());
   });
+}
+
+Future<void> _syncPersistentAuthWithFirebase() async {
+  final user = AuthService.instance.currentUser;
+  if (user == null) return;
+  final stored = PersistentAuthService.instance.getUserPhone();
+  final phone = (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
+      ? user.phoneNumber!
+      : (stored ?? '');
+  try {
+    await PersistentAuthService.instance.saveLoginSession(
+      phoneNumber: phone,
+      userId: user.uid,
+    );
+  } catch (e) {
+    debugPrint('Failed to sync auth session to preferences: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -93,21 +111,9 @@ class MyApp extends StatelessWidget {
   }
 
   String _getInitialRoute() {
-    // Check if user is logged in with Firebase
-    final isFirebaseLoggedIn = AuthService.instance.isLoggedIn;
-    
-    // Check if persistent session exists
-    final hasSession = PersistentAuthService.instance.hasActiveSession();
-    
-    // Validate session
-    final isSessionValid = PersistentAuthService.instance.isSessionValid();
-
-    if (isFirebaseLoggedIn && hasSession && isSessionValid) {
-      // User has valid session - go to main app
+    if (AuthService.instance.currentUser != null) {
       return AppRoutes.bookingsListScreen;
     }
-
-    // No valid session - go to login
     return AppRoutes.initial;
   }
 }

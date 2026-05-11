@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../core/app_export.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../services/persistent_auth_service.dart';
 
 class SignUpLoginScreen extends StatefulWidget {
   const SignUpLoginScreen({super.key});
@@ -107,8 +109,21 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
 
   Future<void> _signIn(PhoneAuthCredential credential) async {
     try {
-      await AuthService.instance.signInWithCredential(credential);
+      final cred = await AuthService.instance.signInWithCredential(credential);
+      final user = cred.user;
+      if (user != null) {
+        final raw = _phoneController.text.trim();
+        final normalized = raw.startsWith('+') ? raw : '+91$raw';
+        await PersistentAuthService.instance.saveLoginSession(
+          phoneNumber: (user.phoneNumber != null &&
+                  user.phoneNumber!.isNotEmpty)
+              ? user.phoneNumber!
+              : normalized,
+          userId: user.uid,
+        );
+      }
       if (!mounted) return;
+      setState(() => _isLoading = false);
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.bookingsListScreen,

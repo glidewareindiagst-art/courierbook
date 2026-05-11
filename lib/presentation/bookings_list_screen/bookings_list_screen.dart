@@ -106,6 +106,33 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
     _applyFilters();
   }
 
+  Widget _buildSummaryBanner() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final tomorrow = todayStart.add(const Duration(days: 1));
+    final todayBookings = _allBookings
+        .where(
+          (b) =>
+              !b.createdAt.isBefore(todayStart) && b.createdAt.isBefore(tomorrow),
+        )
+        .toList();
+    final totalCharged = todayBookings.fold<double>(
+      0,
+      (s, b) => s + b.chargedAmount,
+    );
+    final totalProfit =
+        todayBookings.fold<double>(0, (s, b) => s + b.profit);
+    final codPending = todayBookings
+        .where((b) => b.paymentType == PaymentType.cod)
+        .fold<double>(0, (s, b) => s + b.codAmount);
+    return SummaryBannerWidget(
+      bookingCount: todayBookings.length,
+      totalCharged: totalCharged,
+      totalProfit: totalProfit,
+      codPending: codPending,
+    );
+  }
+
   Future<void> _onRefresh() async {
     setState(() => _isSyncing = true);
     // TODO: Replace with actual Google Sheets API sync
@@ -241,9 +268,8 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                 ),
               ),
 
-              // Summary Banner
               SliverToBoxAdapter(
-                child: SummaryBannerWidget(bookings: _allBookings),
+                child: _buildSummaryBanner(),
               ),
 
               // Search & Filters
@@ -424,11 +450,30 @@ class _AnimatedBookingCardState extends State<_AnimatedBookingCard>
   }
 }
 
-class _SearchBarWidget extends StatelessWidget {
+class _SearchBarWidget extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
   const _SearchBarWidget({required this.controller, required this.onChanged});
+
+  @override
+  State<_SearchBarWidget> createState() => _SearchBarWidgetState();
+}
+
+class _SearchBarWidgetState extends State<_SearchBarWidget> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,8 +498,8 @@ class _SearchBarWidget extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: onChanged,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
               style: GoogleFonts.ibmPlexSans(
                 fontSize: 14,
                 color: const Color(0xFF1A2340),
@@ -474,11 +519,11 @@ class _SearchBarWidget extends StatelessWidget {
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
+          if (widget.controller.text.isNotEmpty)
             IconButton(
               onPressed: () {
-                controller.clear();
-                onChanged('');
+                widget.controller.clear();
+                widget.onChanged('');
               },
               icon: const Icon(
                 Icons.close_rounded,

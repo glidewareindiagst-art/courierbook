@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../../../theme/app_theme.dart';
 
 class ConsignmentInfoCardWidget extends StatelessWidget {
@@ -117,13 +119,64 @@ class _BarcodeScannerPage extends StatefulWidget {
 }
 
 class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
-  bool _scanned = false;
+  final MobileScannerController _scannerController = MobileScannerController();
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    for (final barcode in capture.barcodes) {
+      final value = barcode.rawValue;
+      if (value != null && value.trim().isNotEmpty) {
+        widget.onScanned(value.trim());
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
+    }
+  }
+
+  Future<void> _promptManualEntry() async {
+    final textCtrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Enter consignment number',
+          style: GoogleFonts.ibmPlexSans(fontWeight: FontWeight.w600),
+        ),
+        content: TextField(
+          controller: textCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'e.g. CB2024051901',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, textCtrl.text.trim()),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    textCtrl.dispose();
+    if (!mounted) return;
+    if (result != null && result.isNotEmpty) {
+      widget.onScanned(result);
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace with mobile_scanner MobileScanner widget for production
-    // import 'package:mobile_scanner/mobile_scanner.dart';
-    // MobileScanner(onDetect: (capture) { ... })
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -140,67 +193,44 @@ class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
           icon: const Icon(Icons.close_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Enter manually',
+            icon: const Icon(Icons.keyboard_rounded, color: Colors.white),
+            onPressed: _promptManualEntry,
+          ),
+        ],
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Scanner viewfinder placeholder
+          MobileScanner(
+            controller: _scannerController,
+            onDetect: _onDetect,
+          ),
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 260,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.primary, width: 2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: Colors.white.withAlpha(179),
-                          size: 56,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Point camera at barcode',
-                          style: GoogleFonts.ibmPlexSans(
-                            color: Colors.white.withAlpha(179),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            child: IgnorePointer(
+              child: Container(
+                width: 260,
+                height: 160,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppTheme.primary, width: 2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 32),
-                // Manual entry fallback
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Demo: simulate a scan
-                      if (!_scanned) {
-                        _scanned = true;
-                        widget.onScanned('CB2024051908');
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.check_rounded),
-                    label: const Text('Use Demo Scan (CB2024051908)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 32,
+            child: Text(
+              'Align the barcode inside the frame',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.ibmPlexSans(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

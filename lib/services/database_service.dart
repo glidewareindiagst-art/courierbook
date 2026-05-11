@@ -183,7 +183,7 @@ CREATE TABLE bookings (
     return result.map((json) => CustomerModel.fromMap(json)).toList();
   }
 
-  Future close() async {
+  Future<void> close() async {
     final db = await instance.database;
     db.close();
   }

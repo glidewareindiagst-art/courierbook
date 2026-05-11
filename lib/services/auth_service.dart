@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+
+import 'persistent_auth_service.dart';
 
 class AuthService {
   static final AuthService instance = AuthService._();
@@ -31,6 +32,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    await PersistentAuthService.instance.clearSession();
     await _auth.signOut();
   }
 

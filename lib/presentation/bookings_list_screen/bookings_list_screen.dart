@@ -308,10 +308,12 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: EmptyStateWidget(
+                    height: 320,
+                    iconName: 'search',
                     title: _searchQuery.isEmpty
                         ? 'No bookings yet'
                         : 'No results found',
-                    message: _searchQuery.isEmpty
+                    subtitle: _searchQuery.isEmpty
                         ? 'Tap the + button to create your first booking.'
                         : 'Try adjusting your search or filters.',
                   ),

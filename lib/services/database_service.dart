@@ -33,7 +33,6 @@ class DatabaseService {
     const textNullable = 'TEXT';
     const boolType = 'INTEGER NOT NULL'; // 0 for false, 1 for true
     const doubleType = 'REAL NOT NULL';
-    const intType = 'INTEGER NOT NULL';
 
     await db.execute('''
 CREATE TABLE customers (

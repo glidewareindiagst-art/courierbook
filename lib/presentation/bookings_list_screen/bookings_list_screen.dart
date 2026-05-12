@@ -302,13 +302,12 @@ class _BookingsListScreenState extends State<BookingsListScreen> {
               // List
               if (_isLoading)
                 const SliverFillRemaining(
-                  child: Center(child: LoadingSkeletonWidget()),
+                  child: Center(child: LoadingSkeletonWidget(height: 100)),
                 )
               else if (_filteredBookings.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: EmptyStateWidget(
-                    height: 320,
                     iconName: 'search',
                     title: _searchQuery.isEmpty
                         ? 'No bookings yet'

@@ -1,5 +1,4 @@
 import '../../core/app_export.dart';
-import '../../routes/app_routes.dart';
 import '../../widgets/app_navigation.dart';
 import './widgets/consignment_info_card_widget.dart';
 import './widgets/customer_info_card_widget.dart';

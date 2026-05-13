@@ -24,7 +24,7 @@ android {
     defaultConfig {
         applicationId = "com.example.courierbook"
         minSdk = 23          // Firebase Phone Auth requires >= 21; 23 gives comfortable headroom
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
